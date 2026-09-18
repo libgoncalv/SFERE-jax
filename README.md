@@ -1,6 +1,49 @@
 # SFERE
 SFERE (Scale-dependent Feedback Recursion). Mathematical model to explain self-organization of complex spatial patterns from recursion of a scale-dependent feedback at multiple nested scales. First applied to self-organization of branching channel networks in coastal wetlands (van de Vijsel et al. 2023, Nature Communications).
 
+## JAX implementation
+
+This branch (`jax-rewrite`) contains a pure-Python/JAX port of the original OpenCL model. All numerics are expressed as array operations and compiled with `jax.jit`/`lax.fori_loop`; no OpenCL C, no string-built kernels.
+
+### Setup
+
+```bash
+conda create -n sfere-jax -c conda-forge --override-channels python=3.12 -y
+conda run -n sfere-jax pip install -r requirements.txt   # jax[cuda13], numpy, matplotlib, pytest
+ffmpeg install via apt is assumed (for MP4 output)
+```
+
+### Running
+
+```bash
+conda run -n sfere-jax python -m sfere run                       # default RUN9-equivalent (2048x1024, 100 frames)
+conda run -n sfere-jax python -m sfere run --no-vegetation       # vegetation-off control (Suppl. Fig. 2)
+conda run -n sfere-jax python -m sfere run --grid 512x256 --endtime 5000   # quick test run
+conda run -n sfere-jax python -m sfere sweep --para "nv:0.016,0.2" --devices 2   # sweep on 2 GPUs
+```
+
+Outputs land in `RUN9/` with the same filenames as the original notebook (PNG, MP4, `_overview.png`, `.npy` saves). Tests: `conda run -n sfere-jax python -m pytest tests/` (add `-m slow` for the emergence smoke test).
+
+### Layout
+
+| Path | Role |
+|---|---|
+| `sfere/config.py` | Dataclasses: `PhysParams` (RUN9 defaults, MORF-premultiplied), `GridConfig`, `SimConfig`, `RunConfig`, `GradientOptions` |
+| `sfere/state.py` | `State` pytree (the 8 variables as 2D arrays) + initial conditions (numpy RNG seed 2, matching the original) |
+| `sfere/operators.py` | Port of `HydroFunctions_iPy.cl`: stencil operators + all 5 boundary conditions |
+| `sfere/model.py` | `step()`: the 4 equation blocks (momentum → continuity → sediment → vegetation), exact ordering of the original kernel |
+| `sfere/simulate.py` | jit-compiled frame loop (`lax.fori_loop`), host-side frame capture |
+| `sfere/io.py` / `sfere/viz.py` | `.npy` saves + 8-panel figure / MP4 animation / mean-min-max overview |
+| `sfere/cli.py` / `sfere/sweep.py` | `run` and `sweep` subcommands; gradient switches are runtime flags |
+
+### Notes for newcomers
+
+- **Coordinate flip** (inherited from the original): in the code, X runs left→right and Y top→bottom; in the manuscript these axes (and `u`/`v`) are swapped. Consistent throughout; output unaffected. Do not "fix" it.
+- **Ordering**: `h` is clamped to `≥ HCrit` *before* the momentum equations; diagnostics `c`, `t` are computed from *step-start* flow (stale), matching the original kernel.
+- **Boundary assignment** (per variable, as in the kernel): `u`,`v` — reflecting walls (top/left/right) + persistent-flux outflow (bottom); `h`,`d` — Neumann; `s` — Neumann, Dirichlet-0 at the bottom.
+- The original's compile-time `Gradient_*` switches are runtime flags (`--gradient-d0` etc.); gradient values follow the same across-width log-interpolation.
+- Unlike the original OpenCL kernel (racy mid-kernel reads), JAX evaluates derivatives sequentially from consistent fields — same equations, cleaner semantics.
+
 ## Files
 #### clPy.ComplexChannelPatterns_Fig1f_RUN9.ipynb
 This is the main model script. This is the default version of the SFERE model, i.e. the version used to create Fig. 1f in the manuscript (van de Vijsel et al. 2023, Nature Communications). The script can be opened and run in Jupyter Notebook.
