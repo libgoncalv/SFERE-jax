@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import os
 
-import jax.numpy as jnp
 import matplotlib
 
 matplotlib.use("Agg")
@@ -30,7 +29,7 @@ _TITLES = (
 PANEL_ORDER = ("s", "speed", "d", "b", "h", "c", "t", "eta")
 
 
-def _panels(stacks: dict[str, jnp.ndarray], frame: int) -> dict[str, np.ndarray]:
+def _panels(stacks: dict[str, np.ndarray], frame: int) -> dict[str, np.ndarray]:
     u = stacks["u"][frame]
     v = stacks["v"][frame]
     return {
@@ -45,7 +44,7 @@ def _panels(stacks: dict[str, jnp.ndarray], frame: int) -> dict[str, np.ndarray]
     }
 
 
-def save_figure(stacks: dict[str, jnp.ndarray], run: RunConfig, frame: int = -1) -> str:
+def save_figure(stacks: dict[str, np.ndarray], run: RunConfig, frame: int = -1) -> str:
     os.makedirs(run.outdir, exist_ok=True)
     idx = frame if frame >= 0 else stacks["s"].shape[0] - 1
     data = _panels(stacks, idx)
@@ -65,7 +64,7 @@ def save_figure(stacks: dict[str, jnp.ndarray], run: RunConfig, frame: int = -1)
     return path
 
 
-def save_animation(stacks: dict[str, jnp.ndarray], run: RunConfig, fps: int = 10) -> str:
+def save_animation(stacks: dict[str, np.ndarray], run: RunConfig, fps: int = 10) -> str:
     os.makedirs(run.outdir, exist_ok=True)
     n_frames = stacks["s"].shape[0]
     init = _panels(stacks, 0)
@@ -103,7 +102,7 @@ def save_animation(stacks: dict[str, jnp.ndarray], run: RunConfig, fps: int = 10
     return path
 
 
-def save_overview(stacks: dict[str, jnp.ndarray], run: RunConfig, facTY: float, frame_tides: float) -> str:
+def save_overview(stacks: dict[str, np.ndarray], run: RunConfig, facTY: float, frame_tides: float) -> str:
     """Mean/min/max over space for each variable, vs. time in years.
 
     `frame_tides` is the elapsed M2-tides between consecutive frames

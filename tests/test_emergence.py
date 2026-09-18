@@ -21,14 +21,13 @@ def test_emergence_smoke():
 
     state = init_conditions(phys, grid, vegetation=True, seed=2)
     states, _ = run_frames(state, params, sim, verbose=False)
-    final = states[-1]
+    final = states[-1]  # per-frame dict of numpy arrays
 
     for name in ("u", "v", "h", "s", "d"):
-        assert np.isfinite(np.asarray(getattr(final, name))).all(), name
+        assert np.isfinite(np.asarray(final[name])).all(), name
 
     # Sediment must have been redistributed: no longer spatially uniform
-    s_final = np.asarray(final.s)
-    interior = s_final[2:-2, 2:-2]
+    interior = final["s"][2:-2, 2:-2]
     assert interior.std() > 0.0
     # Vegetation grew from seedlings (net growth before mortality)
-    assert np.asarray(final.d).max() > 0.0
+    assert final["d"].max() > 0.0

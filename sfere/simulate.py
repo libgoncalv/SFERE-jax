@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 
 import jax
-import jax.numpy as jnp
+import numpy as np
 
 from .config import SimConfig
 from .model import Params, step
@@ -26,33 +26,32 @@ def make_stepped(params: Params, steps_per_frame: int):
 
 
 def run_frames(state: State, params: Params, sim: SimConfig, verbose: bool = True):
-    """Run the full simulation, returning (states, per-frame wall times).
+    """Run the full simulation, returning (frames, per-frame wall times).
 
-    Mirrors the original: the whole time series stays in device memory
-    (NumFrames snapshots). For the RUN9 default that is
-    100 frames x 8 vars x 2048x1024 float32 ~= 6.7 GB; pass a reduced
-    NumFrames for constrained GPUs.
+    Each frame is copied to host numpy immediately (mirroring the original's
+    cl.enqueue_copy pattern), so device memory stays at one working state and
+    host memory holds ~6.7 GB for the RUN9 default. Returns a list of
+    variable-keyed numpy dicts, one per frame.
     """
     steps_per_frame = sim.steps_per_frame
     frame = make_stepped(params, steps_per_frame)
 
-    states = []
+    var_names = ("u", "v", "h", "b", "s", "d", "c", "t")
+    frames = []
     times = []
     for count in range(sim.NumFrames):
         t0 = time.time()
         state = frame(state)
         jax.block_until_ready(state.h)
-        states.append(state)
+        moved = {name: np.asarray(getattr(state, name)) for name in var_names}
+        frames.append(moved)
         times.append(time.time() - t0)
         if verbose:
             print(f"frame {count + 1}/{sim.NumFrames}: {times[-1]:.2f} s", flush=True)
 
-    return states, times
+    return frames, times
 
 
-def stack(states: list[State]) -> dict[str, jax.Array]:
-    """Stack frame list into (Frame, H, W) arrays keyed by variable name."""
-    return {
-        name: jnp.stack([getattr(st, name) for st in states], axis=0)
-        for name in ("u", "v", "h", "b", "s", "d", "c", "t")
-    }
+def stack(frames: list[dict[str, np.ndarray]]) -> dict[str, np.ndarray]:
+    """Stack per-frame dicts into (Frame, H, W) arrays keyed by variable name."""
+    return {name: np.stack([f[name] for f in frames], axis=0) for name in frames[0]}

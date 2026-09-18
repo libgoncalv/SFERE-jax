@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import os
 
-import jax.numpy as jnp
 import numpy as np
 
 from .config import RunConfig
 from .simulate import stack
 
 
-def save_all(stacks: dict[str, jnp.ndarray], run: RunConfig) -> None:
+def save_all(stacks: dict[str, np.ndarray], run: RunConfig) -> None:
     """Save final state and full stacks as .npy, mirroring the original saves.
 
     Original final-state names end in _u.._d; stack names in _us.._ds. b and c
@@ -28,5 +27,5 @@ def save_all(stacks: dict[str, jnp.ndarray], run: RunConfig) -> None:
         np.save(f"{base}_{name}s", np.asarray(stacks[name]))
 
 
-def last_frame_dict(stacks: dict[str, jnp.ndarray]) -> dict[str, jnp.ndarray]:
+def last_frame_dict(stacks: dict) -> dict:
     return {k: v[-1] for k, v in stacks.items()}
