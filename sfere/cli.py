@@ -1,4 +1,4 @@
-# CLI entry point: python -m sfere run [...]
+# CLI entry point: python -m sfere run|sweep [...]
 
 from __future__ import annotations
 
@@ -12,28 +12,37 @@ from .state import init_conditions
 from .viz import save_animation, save_figure, save_overview
 
 
+def _add_run_common(sp: argparse.ArgumentParser) -> None:
+    sp.add_argument("--endtime", type=float, default=70580.0, help="simulated tides")
+    sp.add_argument("--frames", type=int, default=100, help="number of saved frames")
+    sp.add_argument("--dt", type=float, default=0.0125, help="time step [s]")
+    sp.add_argument("--grid", default="2048x1024", help="Grid_Width x Grid_Height (powers of 2)")
+    sp.add_argument("--run", type=int, default=9, help="RUN number (output naming)")
+    sp.add_argument("--outdir", default="RUN9", help="output directory")
+    sp.add_argument("--seed", type=int, default=2, help="initial-condition RNG seed")
+    sp.add_argument("--no-vegetation", action="store_true", help="disable vegetation dynamics")
+    for flag in ("D0", "Hin", "DifD", "pD"):
+        sp.add_argument(f"--gradient-{flag.lower()}", action="store_true",
+                        help=f"enable the across-width gradient in {flag}")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="sfere", description="SFERE model (JAX port)")
     sub = p.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run a simulation")
-    run.add_argument("--endtime", type=float, default=70580.0, help="simulated tides")
-    run.add_argument("--frames", type=int, default=100, help="number of saved frames")
-    run.add_argument("--dt", type=float, default=0.0125, help="time step [s]")
-    run.add_argument("--grid", default="2048x1024", help="Grid_Width x Grid_Height (powers of 2)")
+    _add_run_common(run)
     run.add_argument("--dx", type=float, default=0.5, help="cell width [m]")
     run.add_argument("--dy", type=float, default=0.5, help="cell height [m]")
-    run.add_argument("--run", type=int, default=9, help="RUN number (output naming)")
-    run.add_argument("--outdir", default="RUN9", help="output directory")
-    run.add_argument("--seed", type=int, default=2, help="initial-condition RNG seed")
-    run.add_argument("--no-vegetation", action="store_true", help="disable vegetation dynamics")
-    for flag in ("D0", "Hin", "DifD", "pD"):
-        run.add_argument(f"--gradient-{flag.lower()}", action="store_true",
-                         help=f"enable the across-width gradient in {flag}")
     run.add_argument("--no-figure", action="store_true")
     run.add_argument("--no-animation", action="store_true")
     run.add_argument("--no-overview", action="store_true")
     run.add_argument("--no-save", action="store_true")
+    run.set_defaults(func=cmd_run)
+
+    from .sweep import register_sweep
+
+    register_sweep(sub)
     return p
 
 
@@ -49,9 +58,8 @@ def cmd_run(args: argparse.Namespace) -> None:
     W, H = _parse_grid(args.grid)
 
     # Factor grid config so that Block_Size=16 and powers of 2 give W x H
-    bx, bn = 16, W // 16
-    by, bn_y = 16, H // 16
-    grid = GridConfig(Block_Size_X=bx, Block_Size_Y=by, Block_Number_X=bn, Block_Number_Y=bn_y,
+    grid = GridConfig(Block_Size_X=16, Block_Size_Y=16,
+                      Block_Number_X=W // 16, Block_Number_Y=H // 16,
                       dX=args.dx, dY=args.dy)
 
     phys = PhysParams()
@@ -66,8 +74,8 @@ def cmd_run(args: argparse.Namespace) -> None:
     print(f"Grid dimensions: {grid.Grid_Width} x {grid.Grid_Height}")
     state = init_conditions(phys, grid, vegetation=run.vegetation, seed=run.seed)
 
-    states, _ = run_frames(state, params, sim)
-    stacks = stack(states)
+    frames, _ = run_frames(state, params, sim)
+    stacks = stack(frames)
 
     if not args.no_save:
         save_all(stacks, run)
@@ -82,8 +90,7 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     args = _build_parser().parse_args()
-    if args.command == "run":
-        cmd_run(args)
+    args.func(args)
 
 
 if __name__ == "__main__":
