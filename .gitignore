@@ -1,0 +1,11 @@
+# Simulation outputs
+RUN*/
+*.mp4
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
