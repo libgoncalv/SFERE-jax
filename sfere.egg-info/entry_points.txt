@@ -1,2 +1,0 @@
-[console_scripts]
-sfere = sfere.cli:main

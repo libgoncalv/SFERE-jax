@@ -1,8 +1,0 @@
-jax[cuda13]>=0.11
-numpy
-matplotlib
-ipython
-ipykernel
-
-[dev]
-pytest

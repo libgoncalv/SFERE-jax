@@ -6,6 +6,7 @@ RUN*/
 __pycache__/
 *.pyc
 .pytest_cache/
+*.egg-info/
 
 # Jupyter
 .ipynb_checkpoints/
