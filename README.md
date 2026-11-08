@@ -22,6 +22,24 @@ conda run -n sfere-jax python -m sfere run --grid 512x256 --endtime 5000   # qui
 conda run -n sfere-jax python -m sfere sweep --para "nv:0.016,0.2" --devices 2   # sweep on 2 GPUs
 ```
 
+Notebook use: open `notebooks/SFERE.ipynb` (Jupyter or VS Code). It configures a
+notebook-scale run, shows a live 8-panel figure updated in place after every
+frame, builds an inline animation of all frames, and saves with the CLI's
+filenames:
+
+```python
+from sfere.simulate import Simulation
+from sfere.live import LiveFigure, html_animation
+
+simulation = Simulation(state, params, sim)   # after init_conditions()
+live = LiveFigure(simulation, run)
+for _ in range(sim.NumFrames):
+    simulation.advance()
+    live.show()
+html_animation(simulation, run)
+simulation.save(run)
+```
+
 Outputs land in `RUN9/` with the same filenames as the original notebook (PNG, MP4, `_overview.png`, `.npy` saves). Tests: `conda run -n sfere-jax python -m pytest tests/` (add `-m slow` for the emergence smoke test).
 
 ### Layout
@@ -35,6 +53,8 @@ Outputs land in `RUN9/` with the same filenames as the original notebook (PNG, M
 | `sfere/simulate.py` | jit-compiled frame loop (`lax.fori_loop`), host-side frame capture |
 | `sfere/io.py` / `sfere/viz.py` | `.npy` saves + 8-panel figure / MP4 animation / mean-min-max overview |
 | `sfere/cli.py` / `sfere/sweep.py` | `run` and `sweep` subcommands; gradient switches are runtime flags |
+| `sfere/live.py` | Notebook display helpers: in-place live 8-panel figure (`LiveFigure`) + inline animation (`html_animation`); IPython imported lazily |
+| `notebooks/SFERE.ipynb` | Interactive notebook: run, watch the evolution live, animate, save (replaces the original's single-cell experience) |
 
 ### Notes for newcomers
 
