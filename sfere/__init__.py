@@ -6,7 +6,7 @@
 
 from .config import GradientOptions, GridConfig, PhysParams, RunConfig, SimConfig
 from .model import Params, step
-from .simulate import make_stepped, run_frames, stack
+from .simulate import Simulation, make_stepped, run_frames, stack
 from .state import State, init_conditions
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     "RunConfig",
     "SimConfig",
     "Params",
+    "Simulation",
     "State",
     "step",
     "make_stepped",
