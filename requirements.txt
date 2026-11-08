@@ -1,6 +1,0 @@
-jax[cuda13]>=0.11
-numpy
-matplotlib
-pytest
-ipython            # sfere.live notebook display helpers (lazy import)
-ipykernel          # notebook kernel for notebooks/SFERE.ipynb

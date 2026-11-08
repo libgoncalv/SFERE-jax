@@ -9,18 +9,22 @@ This branch (`jax-rewrite`) contains a pure-Python/JAX port of the original Open
 
 ```bash
 conda create -n sfere-jax -c conda-forge --override-channels python=3.12 -y
-conda run -n sfere-jax pip install -r requirements.txt   # jax[cuda13], numpy, matplotlib, pytest
+conda run -n sfere-jax pip install -e ".[dev]"   # jax[cuda13], numpy, matplotlib, ipython/ipykernel, pytest
 ffmpeg install via apt is assumed (for MP4 output)
 ```
+
+The editable install makes `import sfere` work from any directory (notebooks included) and installs a `sfere` console command.
 
 ### Running
 
 ```bash
-conda run -n sfere-jax python -m sfere run                       # default RUN9-equivalent (2048x1024, 100 frames)
-conda run -n sfere-jax python -m sfere run --no-vegetation       # vegetation-off control (Suppl. Fig. 2)
-conda run -n sfere-jax python -m sfere run --grid 512x256 --endtime 5000   # quick test run
-conda run -n sfere-jax python -m sfere sweep --para "nv:0.016,0.2" --devices 2   # sweep on 2 GPUs
+conda run -n sfere-jax sfere run                       # default RUN9-equivalent (2048x1024, 100 frames)
+conda run -n sfere-jax sfere run --no-vegetation       # vegetation-off control (Suppl. Fig. 2)
+conda run -n sfere-jax sfere run --grid 512x256 --endtime 5000   # quick test run
+conda run -n sfere-jax sfere sweep --para "nv:0.016,0.2" --devices 2   # sweep on 2 GPUs
 ```
+
+(equivalently `python -m sfere ...`)
 
 Notebook use: open `notebooks/SFERE.ipynb` (Jupyter or VS Code). It configures a
 notebook-scale run, shows a live 8-panel figure updated in place after every

@@ -1,0 +1,27 @@
+[project]
+name = "sfere"
+version = "0.1.0"
+description = "SFERE (Scale-dependent Feedback Recursion): self-organizing channel networks — JAX port of the OpenCL model"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "GPL-3.0-or-later"
+dependencies = [
+    "jax[cuda13]>=0.11",
+    "numpy",
+    "matplotlib",
+    "ipython",   # sfere.live notebook display helpers (lazy import)
+    "ipykernel", # notebook kernel for notebooks/SFERE.ipynb
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+sfere = "sfere.cli:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["sfere"]
