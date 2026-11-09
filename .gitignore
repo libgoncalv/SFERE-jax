@@ -2,7 +2,9 @@
 RUN*/
 *.mp4
 
-# Diagnostic run outputs (keep figures + verdict)
+# Diagnostic run outputs (keep top-level figures + verdict only)
+DIAGNOSTIC/dx*/
+DIAGNOSTIC/smoke_*/
 DIAGNOSTIC/**/*.npy
 DIAGNOSTIC/**/*.npz
 
