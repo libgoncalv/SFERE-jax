@@ -32,6 +32,13 @@ conda run -n sfere-jax sfere sweep --para "nv:0.016,0.2" --devices 2   # sweep o
 
 (equivalently `python -m sfere ...`)
 
+Original vs improved numerics: `sfere run` reproduces the original kernel
+exactly. Two individually switchable improvements exist for the scaling
+experiments - `--improve-friction` (semi-implicit friction; lifts the
+original's dT cap) and `--improve-advection` (upwind momentum stencil;
+removes the coarsening wall) - both off by default and labeled in the output
+names (`docs/numerics.md`).
+
 Notebook use: open `notebooks/SFERE.ipynb` (Jupyter or VS Code). It configures a
 notebook-scale run, shows a live 8-panel figure updated in place after every
 frame, builds an inline animation of all frames, and saves with the CLI's
@@ -60,6 +67,7 @@ Outputs land in `RUN9/` with the same filenames as the original notebook (PNG, M
 | `sfere/state.py` | `State` pytree (the 8 variables as 2D arrays) + initial conditions (numpy RNG seed 2, matching the original) |
 | `sfere/operators.py` | Port of `HydroFunctions_iPy.cl`: stencil operators + all 5 boundary conditions |
 | `sfere/model.py` | `step()`: the 4 equation blocks (momentum → continuity → sediment → vegetation), exact ordering of the original kernel |
+| `sfere/numerics.py` | `step_improved()`: opt-in improvement layer (semi-implicit friction, upwind momentum advection) - default off, never edits the port; see `docs/numerics.md` |
 | `sfere/simulate.py` | jit-compiled frame loop (`lax.fori_loop`), host-side frame capture |
 | `sfere/io.py` / `sfere/viz.py` | `.npy` saves + 8-panel figure / MP4 animation / mean-min-max overview |
 | `sfere/cli.py` / `sfere/sweep.py` | `run` and `sweep` subcommands; gradient switches are runtime flags |

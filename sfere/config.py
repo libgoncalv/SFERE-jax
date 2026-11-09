@@ -16,6 +16,26 @@ class GradientOptions:
     pD: bool = False
 
 
+@dataclasses.dataclass(frozen=True)
+class NumericsOptions:
+    """Improvement-layer switches (docs/numerics.md); defaults = the faithful port.
+
+    semi_implicit_friction: the kernel's friction term -g_Ct2*|u|*u/h moves
+      from the explicit update into a backward-Euler divisor (1 + dT*lambda)
+      with lambda lagged to step-start |u|, as in the kernel. Removes the
+      dT < 2/lambda cap (~0.017 s) that vegetated thin films set independently
+      of dX.
+    upwind_advection: the momentum advection stencil (d_dx/d_dy, centred)
+      becomes the flow-direction (upwind) stencil; continuity, sediment and
+      vegetation stencils stay exactly as in the kernel. Keeps the scheme
+      damped where the grid Peclet number Pe = |U|*dX/DifU approaches 1
+      (relevant whenever dX grows toward the coarsening limit).
+    """
+
+    semi_implicit_friction: bool = False
+    upwind_advection: bool = False
+
+
 @dataclass(frozen=True)
 class PhysParams:
     """Physical/ecological parameters, RUN9 defaults from the original notebook.
@@ -126,10 +146,12 @@ class RunConfig:
     outdir: str = "RUN9"
     seed: int = 2
     vegetation: bool = True
+    tag: str = ""  # labels deviation runs, e.g. "IMPf" (see docs/numerics.md)
 
     @property
     def ModelName(self) -> str:
-        return f"ComplexChannelPatterns_Fig1f_RUN{self.RUN}"
+        base = f"ComplexChannelPatterns_Fig1f_RUN{self.RUN}"
+        return f"{base}_{self.tag}" if self.tag else base
 
     def replace(self, **kw) -> "RunConfig":
         return dataclasses.replace(self, **kw)

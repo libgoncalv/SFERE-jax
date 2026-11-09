@@ -8,6 +8,9 @@ DIAGNOSTIC/smoke_*/
 DIAGNOSTIC/**/*.npy
 DIAGNOSTIC/**/*.npz
 
+# Improved-numerics run outputs (results go into docs/numerics.md tables)
+IMPROVED/
+
 # Python
 __pycache__/
 *.pyc

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from .config import GradientOptions, GridConfig, PhysParams, RunConfig, SimConfig
+from .config import GradientOptions, GridConfig, NumericsOptions, PhysParams, RunConfig, SimConfig
 from .io import save_all
 from .model import Params
 from .simulate import run_frames, stack
@@ -24,6 +24,12 @@ def _add_run_common(sp: argparse.ArgumentParser) -> None:
     for flag in ("D0", "Hin", "DifD", "pD"):
         sp.add_argument(f"--gradient-{flag.lower()}", action="store_true",
                         help=f"enable the across-width gradient in {flag}")
+    sp.add_argument("--improve-friction", action="store_true",
+                    help="semi-implicit friction (departure from the original kernel; "
+                         "removes its dT cap - see docs/numerics.md)")
+    sp.add_argument("--improve-advection", action="store_true",
+                    help="upwind momentum advection stencil (departure from the "
+                         "original kernel - see docs/numerics.md)")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -65,16 +71,25 @@ def cmd_run(args: argparse.Namespace) -> None:
     phys = PhysParams()
     gradients = GradientOptions(D0=args.gradient_d0, Hin=args.gradient_hin,
                                 DifD=args.gradient_difd, pD=args.gradient_pd)
+    numerics = NumericsOptions(semi_implicit_friction=args.improve_friction,
+                               upwind_advection=args.improve_advection)
     sim = SimConfig(EndTime=args.endtime, NumFrames=args.frames, dT=args.dt)
+    tag = ""
+    if args.improve_friction or args.improve_advection:
+        parts = [name for name, on in (("semi-implicit friction", args.improve_friction),
+                                       ("upwind advection", args.improve_advection)) if on]
+        tag = "IMP" + ("f" if args.improve_friction else "") + ("a" if args.improve_advection else "")
+        print(f"numerics: improved layer ({', '.join(parts)}) - deviates from the "
+              "original kernel, see docs/numerics.md")
     run = RunConfig(RUN=args.run, SUBRUNa=1, SUBRUNb=1, outdir=args.outdir, seed=args.seed,
-                    vegetation=not args.no_vegetation)
+                    vegetation=not args.no_vegetation, tag=tag)
 
     params = Params(phys=phys, gradients=gradients, dX=grid.dX, dY=grid.dY, dT=sim.dT)
 
     print(f"Grid dimensions: {grid.Grid_Width} x {grid.Grid_Height}")
     state = init_conditions(phys, grid, vegetation=run.vegetation, seed=run.seed)
 
-    frames, _ = run_frames(state, params, sim)
+    frames, _ = run_frames(state, params, sim, numerics=numerics if tag else None)
     stacks = stack(frames)
 
     if not args.no_save:

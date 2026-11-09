@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import time
 from typing import TYPE_CHECKING
 
@@ -10,6 +11,7 @@ import numpy as np
 
 from .config import SimConfig
 from .model import Params, step
+from .numerics import step_improved
 from .state import State
 
 if TYPE_CHECKING:
@@ -18,13 +20,23 @@ if TYPE_CHECKING:
 _VAR_NAMES = ("u", "v", "h", "b", "s", "d", "c", "t")
 
 
-def make_stepped(params: Params, steps_per_frame: int):
-    """Return a jit-compiled function running `steps_per_frame` model steps."""
+def make_stepped(params: Params, steps_per_frame: int, step_fn=None):
+    """Return a jit-compiled function running `steps_per_frame` model steps.
+
+    `step_fn(state, params)` is the per-step function; the default is the
+    faithful port sfere.model.step. Passing the improvement layer
+    (sfere.numerics.step_improved with its options) changes the numerics;
+    the loop, capture and saving are identical either way.
+    """
+    if step_fn is None:
+        from .model import step
+
+        step_fn = step
 
     @jax.jit
     def frame(state: State) -> State:
         def body(_, st):
-            return step(st, params)
+            return step_fn(st, params)
 
         return jax.lax.fori_loop(0, steps_per_frame, body, state)
 
@@ -40,10 +52,11 @@ class Simulation:
     cl.enqueue_copy pattern), so device memory stays at one working state.
     """
 
-    def __init__(self, state: State, params: Params, sim: SimConfig) -> None:
+    def __init__(self, state: State, params: Params, sim: SimConfig,
+                 step_fn=None) -> None:
         self.params = params
         self.sim = sim
-        self._frame = make_stepped(params, sim.steps_per_frame)
+        self._frame = make_stepped(params, sim.steps_per_frame, step_fn)
         self._state = state
         self.frames: list[dict[str, np.ndarray]] = []
         self.times: list[float] = []
@@ -120,13 +133,20 @@ class Simulation:
         return written
 
 
-def run_frames(state: State, params: Params, sim: SimConfig, verbose: bool = True):
+def run_frames(state: State, params: Params, sim: SimConfig, verbose: bool = True,
+               numerics: "NumericsOptions | None" = None):
     """Run the full simulation, returning (frames, per-frame wall times).
 
     Thin wrapper over Simulation kept for the CLI: output (frames format and
     progress lines) is identical to the pre-Simulation implementation.
+    `numerics` selects the improvement layer (docs/numerics.md); the default
+    None runs the faithful port.
     """
-    nsim = Simulation(state, params, sim)
+    if numerics is None:
+        step_fn = None
+    else:
+        step_fn = functools.partial(step_improved, opt=numerics)
+    nsim = Simulation(state, params, sim, step_fn=step_fn)
     for count in range(sim.NumFrames):
         nsim.advance()
         if verbose:
