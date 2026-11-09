@@ -13,6 +13,12 @@ conda run -n sfere-jax pip install -e ".[dev]"   # jax[cuda13], numpy, matplotli
 ffmpeg install via apt is assumed (for MP4 output)
 ```
 
+> **Platform compatibility:** JAX's supported platforms and accelerators change over
+> time — check the [official compatibility table](https://docs.jax.dev/en/latest/installation.html#supported-platforms)
+> before running on a new machine. Native Windows has no NVIDIA GPU support; we
+> recommend **native Linux** (best GPU support) or **Windows WSL2** (used throughout
+> development).
+
 The editable install makes `import sfere` work from any directory (notebooks included) and installs a `sfere` console command.
 
 ### Running
