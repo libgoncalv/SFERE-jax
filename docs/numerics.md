@@ -68,14 +68,43 @@ conditions (numpy seed 2).
    stays finite for 300.
 3. The switched paths stay finite and actually differ from the port.
 
-## Physics equivalence
+## Physics equivalence and measured gains
 
-The improved path is expected to change *how the states are stepped*, not
-*what the model converges to*: at the reference settings the improved run
-reproduces the channel width measured by the dX-invariance diagnostic
-(~12 m on the 1024x512 m domain; see `DIAGNOSTIC/verdict.md`). If a settings
-combination changed the widths materially, that difference would itself be
-a finding - treat it as such, not as noise.
+Measured on this workstation (1x CUDA device), same 1024x512 m domain,
+EndTime 70580, improved path with both switches on:
+
+| run | dX | dT | steps | wall | runs-median width | finite |
+|---|---|---|---|---|---|---|
+| port reference | 0.5 m | 0.0125 | 5.646M | ~23 min | 12.00 m | yes |
+| improved | 0.5 m | 0.0125 | 5.646M | ~23 min | **11.00 m** | yes |
+| improved | 0.5 m | 0.05 | 1.412M | ~7 min | **11.50 m** | yes |
+| improved | 1.0 m | 0.05 | 1.412M | ~3 min | **17.00 m** | yes |
+| improved | 2.0 m | 0.1 / 0.025 | - | - | - | **no** (below) |
+
+Physics equivalence: at dT=0.0125 the improved path gives 11.0 m vs the
+port's 12.0 m - within the estimator's threshold sensitivity band - and the
+sediment fields correlate 0.90 with means 0.2281 vs 0.2283 m. Same model
+answers. The gain: dT can be raised 4x (0.0125 -> 0.05) with the SAME
+physical EndTime: 3.4x less wall time at dX=0.5, ~7.7x at dX=1.0. The
+morphological damping rates stay far inside their explicit bounds
+(edge erosion rate lam_s*DT <~ 0.01 throughout, probed).
+
+## Limit found at dX = 2: positive-depth continuity (next deviation)
+
+At dX=2.0 the run goes non-finite before completion, at both dT=0.1
+(negative min(h) = -0.0005 m from ~step 90k, u non-finite by ~128k) and
+dT=0.025 (probe finite through 25% of the run, saved final state
+non-finite). Mechanism: forward-Euler continuity with centred fluxes can
+overshoot a converging drying cell below zero depth; the kernel's
+step-start clamp (h >= HCrit) then "repairs" it with an implicit water
+source, which recurs often enough at the unresolved scales to destabilize
+the state. Not friction, not advection, and not fixed by smaller dT.
+
+Remedy (future deviation #3, deliberately not in this layer to keep its
+scope auditable): positivity-preserving continuity - flux limiting or a
+sub-stepped hydro update - after which dX~2-3 m (the width/4~3 m coarsening
+target from the diagnostic) becomes reachable. Validated window for THIS
+layer: dX <= 1 m with dT <= 0.05.
 
 ## Usage
 
