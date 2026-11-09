@@ -3,7 +3,7 @@ SFERE (Scale-dependent Feedback Recursion). Mathematical model to explain self-o
 
 ## JAX implementation
 
-This branch (`jax-rewrite`) contains a pure-Python/JAX port of the original OpenCL model. All numerics are expressed as array operations and compiled with `jax.jit`/`lax.fori_loop`; no OpenCL C, no string-built kernels.
+This repository is a pure-Python/JAX reimplementation of the original OpenCL SFERE model ([RCvandeVijsel/SFERE](https://github.com/RCvandeVijsel/SFERE)). All numerics are expressed as array operations and compiled with `jax.jit`/`lax.fori_loop`; no OpenCL C, no string-built kernels.
 
 ### Setup
 
