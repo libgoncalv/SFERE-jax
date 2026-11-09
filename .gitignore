@@ -2,6 +2,10 @@
 RUN*/
 *.mp4
 
+# Diagnostic run outputs (keep figures + verdict)
+DIAGNOSTIC/**/*.npy
+DIAGNOSTIC/**/*.npz
+
 # Python
 __pycache__/
 *.pyc
