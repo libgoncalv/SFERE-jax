@@ -71,6 +71,8 @@ Outputs land in `RUN9/` with the same filenames as the original notebook (PNG, M
 | `sfere/simulate.py` | jit-compiled frame loop (`lax.fori_loop`), host-side frame capture |
 | `sfere/io.py` / `sfere/viz.py` | `.npy` saves + 8-panel figure / MP4 animation / mean-min-max overview |
 | `sfere/cli.py` / `sfere/sweep.py` | `run` and `sweep` subcommands; gradient switches are runtime flags |
+| `scripts/dx_diagnostic.py` | dX-invariance diagnostic (smoke/run/report): channel width in metres across resolutions; results in `DIAGNOSTIC/` |
+| `docs/numerics.md` | The improvement layer (`sfere/numerics.py`): rationale, measured gains, and the dX=2 positive-depth limit |
 | `sfere/live.py` | Notebook display helpers: in-place live 8-panel figure (`LiveFigure`) + inline animation (`html_animation`); IPython imported lazily |
 | `notebooks/SFERE.ipynb` | Interactive notebook: run, watch the evolution live, animate, save (replaces the original's single-cell experience) |
 
